@@ -303,12 +303,10 @@ Public Class PageLaunchLeft
             Case 0 '正版或离线
 UnknownType:
                 If RadioLoginType5.Checked Then
-                    If Settings.Get(Of String)("CacheMsV2Access") = "" Then
-                        Type = PageType.Ms
-                    Else
-                        Type = PageType.MsSkin
-                    End If
-                    Settings.Set("LoginType", McLoginType.Ms)
+                    '本分支：正版登录需要 Minecraft 开发者白名单，当前不可用，自动回落到离线登录
+                    ReturnMsUnavailable()
+                    Type = PageType.Legacy
+                    Settings.Set("LoginType", McLoginType.Legacy)
                 Else
                     Type = PageType.Legacy
                     Settings.Set("LoginType", McLoginType.Legacy)
@@ -318,16 +316,14 @@ UnknownType:
                 RadioLoginType5.Visibility = Visibility.Visible
                 RadioLoginType0.Visibility = Visibility.Visible
             Case 1 '仅正版
-                If Settings.Get(Of String)("CacheMsV2Access") = "" Then
-                    Type = PageType.Ms
-                Else
-                    Type = PageType.MsSkin
-                End If
-                Settings.Set("LoginType", McLoginType.Ms)
+                '本分支：正版登录需要 Minecraft 开发者白名单，当前不可用，自动回落到离线登录
+                ReturnMsUnavailable()
+                Type = PageType.Legacy
+                Settings.Set("LoginType", McLoginType.Legacy)
                 PanType.Visibility = Visibility.Collapsed
                 PanTypeOne.Visibility = Visibility.Visible
-                PathTypeOne.Data = (New GeometryConverter).ConvertFromString(Logo.IconButtonShield)
-                LabTypeOne.Text = "正版登录"
+                PathTypeOne.Data = (New GeometryConverter).ConvertFromString(Logo.IconButtonOffline)
+                LabTypeOne.Text = "离线登录"
                 RadioLoginType5.Visibility = Visibility.Visible
                 RadioLoginType0.Visibility = Visibility.Collapsed
             Case 2 '仅离线
@@ -371,7 +367,26 @@ UnknownType:
         If Control IsNot Nothing Then Control.Checked = True
     End Sub
     Private Sub RadioLoginType_Change(sender As Object, raiseByMouse As Boolean) Handles RadioLoginType0.Check, RadioLoginType5.Check
-        If raiseByMouse Then RefreshPage(True, True)
+        If Not raiseByMouse Then Return
+        '本分支：用户主动选择正版登录时，提示不可用并切回离线
+        If RadioLoginType5.Checked Then
+            ReturnMsUnavailable()
+            RadioLoginType0.Checked = True
+            Return
+        End If
+        RefreshPage(True, True)
+    End Sub
+
+    ''' <summary>
+    ''' 本分支：正版登录需要应用通过 Minecraft 开发者白名单，当前无法使用。
+    ''' 这里只提示并回落到离线登录，正版登录相关代码保留但不修改。
+    ''' </summary>
+    Private Shared IsMsUnavailableHinted As Boolean = False
+    Private Sub ReturnMsUnavailable()
+        If Not IsMsUnavailableHinted Then
+            IsMsUnavailableHinted = True
+            Hint("正版登录暂不可用（需要 Minecraft 开发者白名单），已切换为离线登录。", HintType.Red)
+        End If
     End Sub
 
 #End Region

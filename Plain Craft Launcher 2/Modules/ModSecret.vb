@@ -137,10 +137,12 @@ Friend Module ModSecret
             FrmMain.PanForm.Background.Freeze()
         End Sub)
     End Sub
+    '本分支不提供主题切换（原版中需赞助解锁），这里直接跳过所有主题检查，
+    '并强制使用默认主题色，避免隐藏的控件导致主题状态不一致。
     Friend Sub ThemeCheckAll(EffectSetup As Boolean)
     End Sub
     Friend Function ThemeCheckOne(Id As Integer) As Boolean
-        Return True
+        Return False
     End Function
     Friend Function ThemeUnlock(Id As Integer, Optional ShowDoubleHint As Boolean = True, Optional UnlockHint As String = Nothing) As Boolean
         Return False

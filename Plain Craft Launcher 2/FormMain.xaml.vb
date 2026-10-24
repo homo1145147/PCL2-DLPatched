@@ -310,8 +310,9 @@ Public Class FormMain
             End If
         End If
         '刷新主题
+        '本分支不提供主题切换，强制使用默认主题（0 = 龙猫蓝），忽略历史设置
         ThemeCheckAll(False)
-        ThemeRefresh(Settings.Get(Of Integer)("UiLauncherTheme"))
+        ThemeRefresh(0)
         '注册拖拽事件（不能直接加 Handles，否则没用；#6340）
         [AddHandler](DragDrop.DragEnterEvent, New DragEventHandler(AddressOf HandleDrag), handledEventsToo:=True)
         [AddHandler](DragDrop.DragOverEvent, New DragEventHandler(AddressOf HandleDrag), handledEventsToo:=True)
@@ -450,7 +451,17 @@ Public Class FormMain
             Telemetry("启动")
             '开源版本提示
             If VersionBranchMain = "OpenSource" Then
-                MyMsgBox($"该版本中无法使用以下特性：{vbCrLf}- CurseForge API 调用：需要自行申请 API Key，然后添加到 ModSecret.vb 的开头{vbCrLf}- 正版登录：需要自行向微软申请 Client ID，然后添加到 ModSecret.vb 的开头{vbCrLf}- 更新与联网通知：避免滥用隐患{vbCrLf}- 主题切换：这是需要赞助解锁的纪念性质的功能，别让赞助者太伤心啦……{vbCrLf}- 百宝箱：开发早期往里面塞了些开发工具，整理起来太麻烦了……", "开源版本说明")
+                MyMsgBox(
+                    $"这是 PCL2-DLPatched，基于 Plain Craft Launcher 2 的第三方修改版，与龙腾猫跃及官方项目无关。{vbCrLf}{vbCrLf}" &
+                    $"本分支相对原版的改动：{vbCrLf}" &
+                    $"- 恢复了 2.99.0.0 中原版游戏与整合包的下载功能{vbCrLf}" &
+                    $"- 内置了自建的微软登录 Client ID，CurseForge 可通过镜像源访问{vbCrLf}" &
+                    $"- 重新实现了百宝箱：今日人品、内存优化、清理垃圾{vbCrLf}{vbCrLf}" &
+                    $"以下功能在当前版本中不可用：{vbCrLf}" &
+                    $"- 正版登录：自建 Client ID 未获得 Minecraft 开发者白名单，登录会在最后一步失败，已改为离线登录{vbCrLf}" &
+                    $"- 主题颜色切换：原版中需赞助解锁，本分支移除该入口，仅保留不透明度与背景自定义{vbCrLf}" &
+                    $"- 更新检查与联网通知、自定义下载：未包含在开源实现中",
+                    "关于本版本")
             End If
         End Sub, "初始化", ThreadPriority.Lowest)
 
