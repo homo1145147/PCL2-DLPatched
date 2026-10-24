@@ -15,7 +15,9 @@ Friend Module ModSecret
 
 #Region "网络鉴权"
 
-    Public Const RestrictMcDownload As Boolean = True
+    '本分支（PCL2-DLPatched）恢复 MC 下载功能：官方 2.99.0.0 将此项硬编码为 True，
+    '开源版中该开关只控制界面与安装入口，不涉及任何联网校验，改为 False 即可完全恢复。
+    Public Const RestrictMcDownload As Boolean = False
     Friend Function SecretCdnSign(UrlWithMark As String) As String
         If Not UrlWithMark.EndsWithF("{CDN}") Then Return UrlWithMark
         Return UrlWithMark.Replace("{CDN}", "").Replace(" ", "%20")
