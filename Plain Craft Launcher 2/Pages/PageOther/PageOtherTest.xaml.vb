@@ -210,7 +210,7 @@ Public Class PageOtherTest
     ' 随机提示与彩蛋
     '========================================
 
-    Private Shared ReadOnly Random As New System.Random()
+    Private Shared ReadOnly RandomSource As New System.Random()
 
     Private Shared ReadOnly Hints As String() = {
         "按 F3 可以在游戏里查看坐标，按 F3 + G 可以显示区块边界。",
@@ -254,15 +254,15 @@ Public Class PageOtherTest
     }
 
     Public Shared Function GetRandomHint() As String
-        Return Hints(Random.Next(Hints.Length))
+        Return Hints(RandomSource.Next(Hints.Length))
     End Function
 
     Public Shared Function GetRandomPresetHint() As String
-        Return PresetHints(Random.Next(PresetHints.Length))
+        Return PresetHints(RandomSource.Next(PresetHints.Length))
     End Function
 
     Public Shared Function GetRandomCave() As String
-        Return Caves(Random.Next(Caves.Length))
+        Return Caves(RandomSource.Next(Caves.Length))
     End Function
 
 End Class
