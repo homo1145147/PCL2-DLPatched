@@ -439,9 +439,10 @@ Public Class FormMain
             Catch ex As Exception
                 Logger.Error(ex, "初始化加载池运行失败")
             End Try
-            '清理自动更新文件
+            '清理自动更新文件（本分支改用独立的可执行文件名，旧版 PCL 下载的更新文件一并清理）
             Try
                 FileUtils.Delete(Paths.Base & "PCL\Plain Craft Launcher 2.exe")
+                FileUtils.Delete(Paths.Base & "PCL\PCL2_DLPatched.exe")
             Catch ex As Exception
                 Logger.Warn(ex, "清理自动更新文件失败")
             End Try
