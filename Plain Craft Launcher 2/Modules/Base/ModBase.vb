@@ -7,6 +7,8 @@ Public Module ModBase
 
     '下列版本信息由更新器自动修改
     Public Const VersionBaseName As String = "2.99.0.0" '显示用版本名
+    '本分支（PCL2-DLPatched）的版本后缀：用于与官方 2.99.0.0 区分，避免更新器把两个版本视为同一版本。
+    Public Const VersionBranchSuffix As String = "-DLPatched"
     Public Const CommitHash As String = "" 'Commit Hash，由 GitHub Workflow 自动替换
 #If RELEASE Then
     Public Const VersionCode As Integer = 413 '正式版
@@ -15,7 +17,7 @@ Public Module ModBase
 #End If
 
     '版本信息
-    Public Const VersionDisplay As String = BuildTypeDisplay & " " & VersionBaseName
+    Public Const VersionDisplay As String = BuildTypeDisplay & " " & VersionBaseName & VersionBranchSuffix
 #If DEBUG Then
     Public Const BuildTypeDisplay As String = "开发版"
     Public Const BuildType As BuildTypes = BuildTypes.Debug
