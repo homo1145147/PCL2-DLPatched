@@ -449,8 +449,9 @@ Public Class FormMain
             End Try
             '上报
             Telemetry("启动")
-            '开源版本提示
-            If VersionBranchMain = "OpenSource" Then
+            '开源版本提示（仅首次启动时显示一次）
+            If VersionBranchMain = "OpenSource" AndAlso Not Settings.Get(Of Boolean)("SystemDlPatchedIntroShown") Then
+                Settings.Set("SystemDlPatchedIntroShown", True)
                 MyMsgBox(
                     $"这是 PCL2-DLPatched，基于 Plain Craft Launcher 2 的第三方修改版，与龙腾猫跃及官方项目无关。{vbCrLf}{vbCrLf}" &
                     $"本分支相对原版的改动：{vbCrLf}" &
@@ -460,7 +461,8 @@ Public Class FormMain
                     $"以下功能在当前版本中不可用：{vbCrLf}" &
                     $"- 正版登录：自建 Client ID 未获得 Minecraft 开发者白名单，登录会在最后一步失败，已改为离线登录{vbCrLf}" &
                     $"- 主题颜色切换：原版中需赞助解锁，本分支移除该入口，仅保留不透明度与背景自定义{vbCrLf}" &
-                    $"- 更新检查与联网通知、自定义下载：未包含在开源实现中",
+                    $"- 更新检查与联网通知、自定义下载：未包含在开源实现中{vbCrLf}{vbCrLf}" &
+                    $"这条说明只会显示这一次。",
                     "关于本版本")
             End If
         End Sub, "初始化", ThreadPriority.Lowest)
