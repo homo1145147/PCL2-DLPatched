@@ -4,9 +4,21 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     xmlns:local="clr-namespace:PCL"
-    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    mc:Ignorable="d"
     PanScroll="PanBack">
     <local:MyScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" x:Name="PanBack">
-        <TextBlock Text="为便于维护，开源内容中不包含百宝箱功能……" HorizontalAlignment="Center" FontSize="15" Height="30" VerticalAlignment="Center" />
+        <StackPanel Margin="25,10,25,25">
+            <local:MyCard Margin="0,15" Title="百宝箱">
+                <StackPanel Margin="25,40,25,18">
+                    <TextBlock Text="本分支（PCL2-DLPatched）自行实现的常用小工具" FontSize="12.5" Opacity="0.6" Margin="0,0,0,12" TextWrapping="Wrap" />
+                    <local:MyListItem x:Name="ItemJrrp" Title="今日人品" Info="按当天日期计算一个 0-100 的人品值，同一天内结果不变"
+                                     Type="Clickable" Click="ItemJrrp_Click" />
+                    <local:MyListItem x:Name="ItemMemoryOptimize" Title="内存优化" Info="释放 PCL 自身占用的闲置物理内存，启动游戏前也会自动执行"
+                                     Type="Clickable" Margin="0,8,0,0" Click="ItemMemoryOptimize_Click" />
+                    <local:MyListItem x:Name="ItemRubbishClear" Title="清理垃圾" Info="清理 PCL 下载与解压产生的临时文件，不影响游戏、存档与登录状态"
+                                     Type="Clickable" Margin="0,8,0,0" Click="ItemRubbishClear_Click" />
+                </StackPanel>
+            </local:MyCard>
+        </StackPanel>
     </local:MyScrollViewer>
 </local:MyPageRight>
