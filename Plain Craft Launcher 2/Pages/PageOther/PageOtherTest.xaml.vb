@@ -42,19 +42,12 @@ Public Class PageOtherTest
         Try
             Dim Value As Integer = GetJrrpValue()
             Dim Level As String = JrrpLevelText(Value)
-            Dim Comment As String
-            If Value >= JrrpLuckyThreshold Then
-                Comment = "你今天的手气好得离谱，去买张彩票吧！"
-            ElseIf Value >= 75 Then
-                Comment = "状态不错，适合开新坑。"
-            ElseIf Value >= 50 Then
-                Comment = "普普通通，平庸即平安。"
-            ElseIf Value >= 25 Then
-                Comment = "建议今天少玩点极限模式。"
-            Else
-                Comment = "……要不今天先别启动游戏了？"
+            '64 是一整组，这里给个彩蛋
+            Dim Comment As String = ""
+            If Value = 64 Then
+                Comment = "一整组！你的运气可以装满一格物品栏！" & vbCrLf & vbCrLf
             End If
-            MyMsgBox($"{vbCrLf}今日人品：{Value}（{Level}）{vbCrLf}{vbCrLf}{Comment}{vbCrLf}{vbCrLf}人品值由当天日期与识别码共同决定，同一天内不会变化。",
+            MyMsgBox($"{vbCrLf}今日人品：{Value}（{Level}）{vbCrLf}{vbCrLf}{Comment}人品值由当天日期与识别码共同决定，同一天内不会变化。",
                 "今日人品", "确定")
             Logger.Info($"今日人品：{Value}（{Level}）")
         Catch ex As Exception
