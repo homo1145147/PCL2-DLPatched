@@ -456,10 +456,9 @@ Public Class FormMain
                     $"这是 PCL2-DLPatched，基于 Plain Craft Launcher 2 的第三方修改版，与龙腾猫跃及官方项目无关。{vbCrLf}{vbCrLf}" &
                     $"本分支相对原版的改动：{vbCrLf}" &
                     $"- 恢复了 2.99.0.0 中原版游戏与整合包的下载功能{vbCrLf}" &
-                    $"- 内置了自建的微软登录 Client ID，CurseForge 可通过镜像源访问{vbCrLf}" &
+                    $"- 内置了自建的微软登录 Client ID（已通过 Minecraft 应用注册审核），可直接使用正版登录{vbCrLf}" &
                     $"- 重新实现了百宝箱：今日人品、内存优化、清理垃圾{vbCrLf}{vbCrLf}" &
                     $"以下功能在当前版本中不可用：{vbCrLf}" &
-                    $"- 正版登录：自建 Client ID 未获得 Minecraft 开发者白名单，登录会在最后一步失败，已改为离线登录{vbCrLf}" &
                     $"- 主题颜色切换：原版中需赞助解锁，本分支移除该入口，仅保留不透明度与背景自定义{vbCrLf}" &
                     $"- 更新检查与联网通知、自定义下载：未包含在开源实现中{vbCrLf}{vbCrLf}" &
                     $"这条说明只会显示这一次。",
