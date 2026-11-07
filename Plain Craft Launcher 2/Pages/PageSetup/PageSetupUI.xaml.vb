@@ -487,7 +487,7 @@ Refresh:
                 ElseIf Not Settings.Get(Of Boolean)("UiHiddenOtherAbout") Then
                     FrmMain.BtnTitleSelect4.Text = "关于"
                 Else
-                    FrmMain.BtnTitleSelect4.Text = "百宝箱"
+                    FrmMain.BtnTitleSelect4.Text = "自定义下载源"
                 End If
             Else
                 FrmMain.BtnTitleSelect4.Text = "更多"
