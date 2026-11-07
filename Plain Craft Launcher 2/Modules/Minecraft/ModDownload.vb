@@ -1227,8 +1227,9 @@ Public Module ModDownload
     ''' </summary>
     Public ReadOnly Property DlSources As List(Of DlSourceRule)
         Get
-            Dim Keys As String() = If(Settings.Get(Of String)("ToolDownloadSourceList"), "").
-                Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
+            Dim RawList As String = Settings.Get(Of String)("ToolDownloadSourceList")
+            If RawList Is Nothing Then RawList = ""
+            Dim Keys As String() = RawList.Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
             Dim Result As New List(Of DlSourceRule)
             For Each Key In Keys
                 Dim Rule = DlSourceRegistry.GetBuiltin(Key.Trim())
