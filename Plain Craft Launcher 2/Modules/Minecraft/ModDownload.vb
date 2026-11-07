@@ -1213,6 +1213,61 @@ Public Module ModDownload
 #Region "DlSource | 镜像下载源"
 
     Private DlPreferMojang As Boolean = False
+
+    '========================================
+    ' 镜像源列表（本分支重做）
+    '
+    ' 原版把 BMCLAPI 的域名替换写死在各个 DlSource* 函数里，这里改为从
+    ' 设置读取源列表，按顺序对同一资源生成候选地址。列表为空时使用内置
+    ' 默认顺序（官方源、BMCLAPI）。
+    '========================================
+
+    ''' <summary>
+    ''' 当前启用的镜像源，按优先级排序。列表为空时退回内置默认顺序。
+    ''' </summary>
+    Public ReadOnly Property DlSources As List(Of DlSourceRule)
+        Get
+            Dim Keys As String() = If(Settings.Get(Of String)("ToolDownloadSourceList"), "").
+                Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
+            Dim Result As New List(Of DlSourceRule)
+            For Each Key In Keys
+                Dim Rule = DlSourceRegistry.GetBuiltin(Key.Trim())
+                If Rule IsNot Nothing AndAlso Not Result.Any(Function(r) r.BuiltinKey = Rule.BuiltinKey) Then Result.Add(Rule)
+            Next
+            If Result.Count = 0 Then Result.AddRange(DlSourceRegistry.BuiltinSources)
+            Return Result
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' 按当前源顺序，将一个原始地址展开为所有候选地址。
+    ''' </summary>
+    Private Function DlSourceExpand(Original As String) As IEnumerable(Of String)
+        If Original Is Nothing Then Return {}
+        Dim Result As New List(Of String)
+        For Each Source In DlSources
+            If Source.CanHandle(Original) Then Result.Add(Source.Map(Original))
+        Next
+        If Result.Count = 0 Then Result.Add(Original)
+        Return Result.Distinct()
+    End Function
+
+    ''' <summary>
+    ''' 按当前源顺序，将一个原始地址展开为所有候选地址。
+    ''' 取 Libraries 时 BMCLAPI 需要走 maven 子路径，因此单独展开。
+    ''' </summary>
+    Private Function DlSourceExpandLibrary(Original As String) As IEnumerable(Of String)
+        If Original Is Nothing Then Return {}
+        Dim Result As New List(Of String)
+        For Each Source In DlSources
+            Dim Effective As DlSourceRule = Source
+            If Source.BuiltinKey = DlSourceRegistry.KeyBmclapi Then Effective = DlSourceRegistry.GetMavenCompatible(Source)
+            If Effective.CanHandle(Original) Then Result.Add(Effective.Map(Original))
+        Next
+        If Result.Count = 0 Then Result.Add(Original)
+        Return Result.Distinct()
+    End Function
+
     ''' <summary>
     ''' 下载文件（而非获取版本列表）的时候，是否优先使用官方源。
     ''' </summary>
@@ -1244,46 +1299,16 @@ Public Module ModDownload
 
 
     ''' <summary>
-    ''' 下载 Assets 文件。
+    ''' 下载 Assets 文件。按设置中的源列表展开候选地址。
     ''' </summary>
     Public Function DlSourceAssetsGet(Original As String) As IEnumerable(Of String)
-        Original = Original.Replace("http://resources.download.minecraft.net", "https://resources.download.minecraft.net")
-        Return DlSourceOrder(
-            {Original},
-            {Original.
-                Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/assets").
-                Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/assets").
-                Replace("https://resources.download.minecraft.net", "https://bmclapi2.bangbang93.com/assets")
-            })
+        Return DlSourceExpand(Original.Replace("http://resources.download.minecraft.net", "https://resources.download.minecraft.net"))
     End Function
     ''' <summary>
-    ''' 下载 Libraries 文件。
+    ''' 下载 Libraries 文件。按设置中的源列表展开候选地址（BMCLAPI 走 maven 子路径）。
     ''' </summary>
     Public Function DlSourceLibraryGet(Original As String) As IEnumerable(Of String)
-        If {"minecraftforge", "fabricmc", "neoforged"}.Any(Function(k) Original.Contains(k)) Then '不添加原版源
-            Return {
-                Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/maven"),
-                Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/libraries")
-            }
-        Else
-            Return DlSourceOrder(
-                {Original},
-                {Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/maven"),
-                 Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/libraries")
-                })
-        End If
+        Return DlSourceExpandLibrary(Original)
     End Function
     ''' <summary>
     ''' 下载 Launcher 或 Meta 文件。
@@ -1291,14 +1316,7 @@ Public Module ModDownload
     ''' </summary>
     Public Function DlSourceLauncherOrMetaGet(Original As String) As IEnumerable(Of String)
         If Original Is Nothing Then Throw New Exception("无对应的 json 下载地址")
-        Return DlSourceOrder(
-            {Original},
-            {Original.
-                Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com").
-                Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com").
-                Replace("https://launcher.mojang.com", "https://bmclapi2.bangbang93.com").
-                Replace("https://launchermeta.mojang.com", "https://bmclapi2.bangbang93.com")
-            })
+        Return DlSourceExpand(Original)
     End Function
 
     'Mod 下载源
