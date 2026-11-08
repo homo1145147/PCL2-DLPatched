@@ -54,6 +54,9 @@
                     </x:Array>
                 </local:MyListItem.Buttons>
             </local:MyListItem>
+            <TextBlock Text="设置" Margin="13,20,5,4" Opacity="0.6" FontSize="12" />
+            <local:MyListItem x:Name="ItemSource" Type="RadioBox" IsScaleAnimationEnabled="False" Tag="7" MinPaddingRight="35" Height="36" VerticalAlignment="Top" Title="自定义下载源"
+                  LogoScale="0.95" Logo="M224 160a64 64 0 0 0-64 64v576a64 64 0 0 0 64 64h576a64 64 0 0 0 64-64V224a64 64 0 0 0-64-64H224z m0 64h576v576H224V224z M320 352h384v64H320z m0 160h384v64H320z m0 160h256v64H320z" />
         </StackPanel>
     </local:MyScrollViewer>
 </local:MyPageLeft>

@@ -196,23 +196,28 @@ Public Module ModDownload
     ''' </summary>
     Public DlClientListLoader As New LoaderTask(Of String, DlClientListResult)("DlClientList Main", AddressOf DlClientListMain)
     Private Sub DlClientListMain(Loader As LoaderTask(Of String, DlClientListResult))
-        Select Case Settings.Get(Of Integer)("ToolDownloadVersion")
-            Case 0
-                DlSourceLoader(Loader, New List(Of KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)) From {
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListBmclapiLoader, 30),
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListMojangLoader, 30 + 60)
-                }, Loader.IsForceRestarting)
-            Case 1
-                DlSourceLoader(Loader, New List(Of KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)) From {
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListMojangLoader, 5),
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListBmclapiLoader, 5 + 30)
-                }, Loader.IsForceRestarting)
-            Case Else
-                DlSourceLoader(Loader, New List(Of KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)) From {
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListMojangLoader, 60),
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListBmclapiLoader, 60 + 60)
-                }, Loader.IsForceRestarting)
-        End Select
+        '按「自定义下载源」配置的顺序与启停状态组装候选加载器。
+        '内置源复用专用加载器（带更新提示、PCL 特供项等额外逻辑），
+        '自定义源使用通用加载器。
+        Dim EnabledEntries = DlSourceConfig.Load().Where(Function(e) e.Enabled).ToList()
+        If EnabledEntries.Count = 0 Then EnabledEntries = DlSourceConfig.DefaultEntries()
+        Dim TimeoutBase As Integer = If(Settings.Get(Of Integer)("ToolDownloadVersion") = 0, 30, 5)
+        Dim LoaderList As New List(Of KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer))
+        Dim Offset As Integer = 0
+        For Each Entry In EnabledEntries
+            Dim Sub1 As LoaderTask(Of String, DlClientListResult)
+            Select Case Entry.BuiltinKey
+                Case DlSourceRegistry.KeyOfficial
+                    Sub1 = DlClientListMojangLoader
+                Case DlSourceRegistry.KeyBmclapi
+                    Sub1 = DlClientListBmclapiLoader
+                Case Else
+                    Sub1 = New LoaderTask(Of String, DlClientListResult)($"DlClientList Custom {Entry.Url}", AddressOf DlClientListCustomMain)
+                End Select
+            LoaderList.Add(New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(Sub1, Offset + TimeoutBase))
+            Offset += TimeoutBase
+        Next
+        DlSourceLoader(Loader, LoaderList, Loader.IsForceRestarting)
         '提取所有 Drop 序数
         Dim Drops As New List(Of Integer)
         For Each Version As JObject In Loader.Output.Value("versions")
@@ -223,6 +228,26 @@ Public Module ModDownload
             Drops.Add(Drop)
         Next
         AllDrops = Drops.Distinct.OrderByDescending(Function(d) d).ToList()
+    End Sub
+
+    ''' <summary>
+    ''' 自定义源的版本列表加载器。按配置项查找 URL，避免把地址塞进加载器输入。
+    ''' </summary>
+    Private Sub DlClientListCustomMain(Loader As LoaderTask(Of String, DlClientListResult))
+        Dim SourceName As String = Loader.Name.Replace("DlClientList Custom ", "")
+        Dim Entry = DlSourceConfig.Load().FirstOrDefault(
+            Function(e) Not e.IsBuiltin AndAlso String.Equals(e.Url, SourceName, StringComparison.OrdinalIgnoreCase))
+        If Entry Is Nothing Then Throw New Exception($"自定义下载源 {SourceName} 已不存在")
+        Dim ManifestUrl As String = DlSourceConfig.GetVersionManifest(Entry)
+        If String.IsNullOrEmpty(ManifestUrl) Then Throw New Exception($"自定义下载源 {Entry.Name} 的地址无效")
+        Dim Json As JObject = NetRequestByClientRetry(ManifestUrl, RequireJson:=True).DeserializeJson()
+        Try
+            Dim Versions As JArray = Json("versions")
+            If Versions.Count < 200 Then Throw New Exception("获取到的版本列表长度不足（" & Json.ToString & "）")
+            Loader.Output = New DlClientListResult With {.IsOfficial = False, .SourceName = Entry.Name, .Value = Json}
+        Catch ex As Exception
+            Throw New Exception($"自定义下载源 {Entry.Name} 的版本列表解析失败（{Json.ToString}）", ex)
+        End Try
     End Sub
 
     '各个下载源的分加载器
@@ -1223,20 +1248,11 @@ Public Module ModDownload
     '========================================
 
     ''' <summary>
-    ''' 当前启用的镜像源，按优先级排序。列表为空时退回内置默认顺序。
+    ''' 当前启用的镜像源，按优先级排序。由「自定义下载源」页面配置。
     ''' </summary>
     Public ReadOnly Property DlSources As List(Of DlSourceRule)
         Get
-            Dim RawList As String = Settings.Get(Of String)("ToolDownloadSourceList")
-            If RawList Is Nothing Then RawList = ""
-            Dim Keys As String() = RawList.Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
-            Dim Result As New List(Of DlSourceRule)
-            For Each Key In Keys
-                Dim Rule = DlSourceRegistry.GetBuiltin(Key.Trim())
-                If Rule IsNot Nothing AndAlso Not Result.Any(Function(r) r.BuiltinKey = Rule.BuiltinKey) Then Result.Add(Rule)
-            Next
-            If Result.Count = 0 Then Result.AddRange(DlSourceRegistry.BuiltinSources)
-            Return Result
+            Return DlSourceConfig.ToRules(DlSourceConfig.Load())
         End Get
     End Property
 

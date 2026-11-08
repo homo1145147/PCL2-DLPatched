@@ -9,6 +9,23 @@ Public Module DlSourceRegistry
     Public Const KeyBmclapi As String = "Bmclapi"
 
     ''' <summary>
+    ''' 官方版本清单地址。自定义源按「根地址/官方域名」规则映射。
+    ''' </summary>
+    Public Const OfficialVersionManifest As String = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
+
+    ''' <summary>
+    ''' 需要被镜像的官方域名。自定义源会为每个域名生成 根地址/域名 的映射。
+    ''' </summary>
+    Public ReadOnly KnownDomains As String() = {
+        "launchermeta.mojang.com",
+        "piston-meta.mojang.com",
+        "piston-data.mojang.com",
+        "launcher.mojang.com",
+        "libraries.minecraft.net",
+        "resources.download.minecraft.net"
+    }
+
+    ''' <summary>
     ''' 所有内置源。顺序即默认顺序，排在前面表示优先使用。
     ''' </summary>
     Public ReadOnly Property BuiltinSources As List(Of DlSourceRule) = New List(Of DlSourceRule) From {

@@ -283,6 +283,9 @@
       <DependentUpon>PageDownloadInstall.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\PageDownload\PageDownloadModify.vb" />
+    <Compile Include="Pages\PageDownload\PageDownloadSource.xaml.vb">
+      <DependentUpon>PageDownloadSource.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Pages\PageDownload\Resource\PageDownloadCompDetail.xaml.vb">
       <DependentUpon>PageDownloadCompDetail.xaml</DependentUpon>
     </Compile>
@@ -335,6 +338,7 @@
     <Compile Include="Modules\Minecraft\ModDownload.vb" />
     <Compile Include="Modules\Minecraft\DlSourceRule.vb" />
     <Compile Include="Modules\Minecraft\DlSourceRegistry.vb" />
+    <Compile Include="Modules\Minecraft\DlSourceConfig.vb" />
     <Compile Include="Modules\Minecraft\ModLaunch.vb" />
     <Compile Include="Modules\Minecraft\ModMinecraft.vb" />
     <Compile Include="Pages\PageOther\PageOtherTest.xaml.vb">
@@ -531,6 +535,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Pages\PageDownload\PageDownloadInstall.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Pages\PageDownload\PageDownloadSource.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

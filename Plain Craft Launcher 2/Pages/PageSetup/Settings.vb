@@ -118,8 +118,8 @@ Public Class Settings
         New Setting("ToolDownloadThread", 63, Source:=Sources.Registry),
         New Setting("ToolDownloadSpeed", 42, Source:=Sources.Registry, OnChanged:=AddressOf ModNet.UpdateNetTaskSpeedLimitHigh),
         New Setting("ToolDownloadSource", 1, Source:=Sources.Registry),
-        New Setting("ToolDownloadVersion", 1, Source:=Sources.Registry), '本分支：镜像源列表，按顺序以换行分隔存储 BuiltinKey，为空时用内置默认顺序
-        New Setting("ToolDownloadSourceList", "", Source:=Sources.Registry, Encrypted:=True),
+        New Setting("ToolDownloadVersion", 1, Source:=Sources.Registry),
+        New Setting("ToolDownloadSourceConfig", "", Source:=Sources.Registry, Encrypted:=True), '本分支：自定义下载源配置（JSON 数组），空则用内置默认顺序
         New Setting("ToolDownloadTranslate", 0, Source:=Sources.Registry),
         New Setting("ToolDownloadTranslateV2", 1, Source:=Sources.Registry),
         New Setting("ToolDownloadCert", False, Source:=Sources.Registry, OnChanged:=AddressOf ModNet.ShouldValidateSslCertificateOnLogin),

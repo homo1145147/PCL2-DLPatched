@@ -384,6 +384,10 @@ EndHint:
     Public FrmDownloadDataPack As PageDownloadDataPack
     Public FrmDownloadShader As PageDownloadShader
     Public FrmDownloadResourcePack As PageDownloadResourcePack
+    ''' <summary>
+    ''' 本分支：自定义下载源配置页面。
+    ''' </summary>
+    Public FrmDownloadSource As PageDownloadSource
 
     '设置页面声明
     Public FrmSetupLeft As PageSetupLeft
