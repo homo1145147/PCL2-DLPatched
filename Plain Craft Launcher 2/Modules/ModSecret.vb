@@ -38,7 +38,10 @@ Friend Module ModSecret
                 Req.Headers.Add("User-Agent", $"PCL2/{VersionBaseName}.{CInt(BuildType)}")
             End If
         End If
-        If Not SimulateBrowserHeaders Then Req.Headers.Add("Referer", $"http://{VersionCode}.open.pcl2.server/")
+        '本分支：不再无条件附加伪造的 Referer。
+        '部分镜像 / 自定义 CDN 会按 Referer 防盗链，凭空多出的 Referer 会导致 403。
+        '仅在模拟浏览器请求头时才带 Referer，与 UA 的策略保持一致。
+        If SimulateBrowserHeaders Then Req.Headers.Add("Referer", $"http://{VersionCode}.open.pcl2.server/")
         If Url.Contains("api.curseforge.com") OrElse Url.Contains("forgecdn.net") Then Req.Headers.Add("x-api-key", CurseForgeAPIKey)
     End Sub
 

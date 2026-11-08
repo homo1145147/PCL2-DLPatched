@@ -129,31 +129,27 @@ Public Module DlSourceConfig
     End Function
 
     ''' <summary>
-    ''' 用自定义根地址生成匹配 Mojang 各类域名的替换表。
-    ''' 约定：镜像在根地址下按官方域名分区，例如
-    '''   {根}/launchermeta.mojang.com/mc/game/version_manifest.json
-    '''   {根}/piston-data.mojang.com/v1/objects/...
-    ''' 若镜像的服务端结构不同，需要由镜像方适配，或后续提供「路径映射」配置。
+    ''' 用自定义源生成 DlSourceRule。
+    ''' 自定义源采用「清单入口」模型：只提供版本清单地址，版本 JSON 与所有
+    ''' 文件地址一律沿用清单/版本 JSON 里携带的 URL，不做域名替换。
+    ''' 这适用于自身完成全部资源映射的 CDN（例如玄剑 CDN）。
     ''' </summary>
     Public Function MakeCustomRule(Entry As SourceEntry) As DlSourceRule
         Dim Root As String = If(Entry.Url, "").Trim().TrimEnd("/"c)
         If String.IsNullOrWhiteSpace(Root) Then Return Nothing
-        '只接受 http(s) 地址
         If Not (Root.StartsWithF("http://", True) OrElse Root.StartsWithF("https://", True)) Then Return Nothing
-        Dim Rule As New DlSourceRule With {
+        Return New DlSourceRule With {
             .Name = If(String.IsNullOrWhiteSpace(Entry.Name), Root, Entry.Name),
             .BuiltinKey = "",
+            .VersionManifest = GetVersionManifest(Entry),
             .Replacements = New List(Of KeyValuePair(Of String, String))
         }
-        '把各官方域名替换为 根/官方域名
-        For Each Domain In DlSourceRegistry.KnownDomains
-            Rule.Replacements.Add(New KeyValuePair(Of String, String)("https://" & Domain, Root & "/" & Domain))
-        Next
-        Return Rule
     End Function
 
     ''' <summary>
-    ''' 取出某个内置源的版本清单地址；自定义源按约定拼接。
+    ''' 取出某个源的版本清单地址。
+    ''' 内置源用内置地址；自定义源默认按 {根}/mc/game/version_manifest_v2.json
+    ''' 取清单，取不到时回退到 {根}/mc/game/version_manifest.json。
     ''' </summary>
     Public Function GetVersionManifest(Entry As SourceEntry) As String
         If Entry Is Nothing Then Return Nothing
@@ -161,9 +157,21 @@ Public Module DlSourceConfig
             Dim Builtin = DlSourceRegistry.GetBuiltin(Entry.BuiltinKey)
             Return Builtin?.VersionManifest
         End If
-        Dim Custom = MakeCustomRule(Entry)
-        If Custom Is Nothing Then Return Nothing
-        Return Custom.Map(DlSourceRegistry.OfficialVersionManifest)
+        Dim Root As String = If(Entry.Url, "").Trim().TrimEnd("/"c)
+        If String.IsNullOrWhiteSpace(Root) Then Return Nothing
+        '自定义源允许直接填写清单完整地址（以 .json 结尾）
+        If Root.EndsWithF(".json", True) Then Return Root
+        Return Root & "/mc/game/version_manifest_v2.json"
+    End Function
+
+    ''' <summary>
+    ''' 自定义源的清单地址回退列表：v2 取不到时再试不带 _v2 的命名。
+    ''' </summary>
+    Public Function GetVersionManifestCandidates(Entry As SourceEntry) As String()
+        Dim Primary As String = GetVersionManifest(Entry)
+        If String.IsNullOrWhiteSpace(Primary) Then Return {}
+        If Entry.IsBuiltin OrElse Primary.EndsWithF("version_manifest.json", True) Then Return {Primary}
+        Return {Primary, Primary.Replace("version_manifest_v2.json", "version_manifest.json")}
     End Function
 
 End Module

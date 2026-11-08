@@ -445,8 +445,32 @@ Public Class PageDownloadInstall
     Public MinecraftVersions As JArray
     Private Sub LoadMinecraft_OnFinish()
         MinecraftVersions = CType(DlClientListLoader.Output.Value("versions").DeepClone(), JArray)
+        ShowSourceHint()
         ShowMinecraftVersionList()
         TrySelectWaitingVersion() '自动选择版本
+    End Sub
+
+    ''' <summary>
+    ''' 在页面顶部提示当前版本列表来自哪个下载源。
+    ''' 官方源以外（即镜像或自定义源）才显示，避免干扰默认体验。
+    ''' </summary>
+    Private Sub ShowSourceHint()
+        Try
+            Dim Result = DlClientListLoader.Output
+            If Result.SourceName Is Nothing Then
+                HintSourceName.Visibility = Visibility.Collapsed
+                Return
+            End If
+            Dim IsOfficial = Result.IsOfficial
+            If IsOfficial Then
+                HintSourceName.Visibility = Visibility.Collapsed
+                Return
+            End If
+            HintSourceName.Text = $"当前版本列表来自：{Result.SourceName}，共 {MinecraftVersions.Count} 个版本。若需更换来源，请在「下载 → 自定义下载源」中调整。"
+            HintSourceName.Visibility = Visibility.Visible
+        Catch ex As Exception
+            Logger.Error(ex, "显示下载源提示失败")
+        End Try
     End Sub
 
     '结果数据化
@@ -509,10 +533,18 @@ Public Class PageDownloadInstall
             '添加最新版本
             Dim CardInfo As New MyCard With {.Title = "最新版本", .Margin = New Thickness(0, 15, 0, 15)}
             Dim PinnedVersions As New List(Of JObject)
-            Dim Release As JObject = Dict("正式版")(0).DeepClone()
-            Release("lore") = "最新正式版，发布于 " & Release("releaseTime").Value(Of Date).ToString("yyyy'/'MM'/'dd HH':'mm")
-            PinnedVersions.Add(Release)
-            If Dict("正式版")(0)("releaseTime").Value(Of Date) < Dict("预览版")(0)("releaseTime").Value(Of Date) Then
+            '本分支：自定义源可能只提供少量版本，甚至没有正式版或预览版，需逐项判空
+            If Not Dict("正式版").Any AndAlso Not Dict("预览版").Any AndAlso
+               Not Dict("远古版").Any AndAlso Not Dict("愚人节版").Any Then
+                Throw New Exception("该下载源未提供任何可用版本")
+            End If
+            If Dict("正式版").Any Then
+                Dim Release As JObject = Dict("正式版")(0).DeepClone()
+                Release("lore") = "最新正式版，发布于 " & Release("releaseTime").Value(Of Date).ToString("yyyy'/'MM'/'dd HH':'mm")
+                PinnedVersions.Add(Release)
+            End If
+            If Dict("预览版").Any AndAlso
+               (Not Dict("正式版").Any OrElse Dict("正式版")(0)("releaseTime").Value(Of Date) < Dict("预览版")(0)("releaseTime").Value(Of Date)) Then
                 Dim Snapshot As JObject = Dict("预览版")(0).DeepClone()
                 Snapshot("lore") = "最新预览版，发布于 " & Snapshot("releaseTime").Value(Of Date).ToString("yyyy'/'MM'/'dd HH':'mm")
                 PinnedVersions.Add(Snapshot)
@@ -522,8 +554,11 @@ Public Class PageDownloadInstall
             CardInfo.SwapControl = PanInfo
             CardInfo.SetContentBuilder(PinnedVersions, '使用 Lambda 转发点击事件，避免 #535
                 Function(Version) McDownloadListItem(Version, Sub(sender, e) MinecraftSelected(sender, e), False))
-            CardInfo.BuildContent()
-            PanMinecraft.Children.Insert(0, CardInfo)
+            '本分支：没有可置顶的版本时（例如自定义源只有远古版）不插入空卡片
+            If PinnedVersions.Any() Then
+                CardInfo.BuildContent()
+                PanMinecraft.Children.Insert(0, CardInfo)
+            End If
             '添加其他版本
             For Each Pair As KeyValuePair(Of String, List(Of JObject)) In Dict
                 If Not Pair.Value.Any() Then Continue For

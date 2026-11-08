@@ -232,19 +232,38 @@ Public Module ModDownload
 
     ''' <summary>
     ''' 自定义源的版本列表加载器。按配置项查找 URL，避免把地址塞进加载器输入。
+    ''' 自定义源只提供清单，文件地址沿用清单/版本 JSON 自带的 URL，因此
+    ''' 不做「版本数量不得少于 200」的检查（这类源的版本数取决于镜像范围）。
     ''' </summary>
     Private Sub DlClientListCustomMain(Loader As LoaderTask(Of String, DlClientListResult))
         Dim SourceName As String = Loader.Name.Replace("DlClientList Custom ", "")
         Dim Entry = DlSourceConfig.Load().FirstOrDefault(
             Function(e) Not e.IsBuiltin AndAlso String.Equals(e.Url, SourceName, StringComparison.OrdinalIgnoreCase))
         If Entry Is Nothing Then Throw New Exception($"自定义下载源 {SourceName} 已不存在")
-        Dim ManifestUrl As String = DlSourceConfig.GetVersionManifest(Entry)
-        If String.IsNullOrEmpty(ManifestUrl) Then Throw New Exception($"自定义下载源 {Entry.Name} 的地址无效")
-        Dim Json As JObject = NetRequestByClientRetry(ManifestUrl, RequireJson:=True).DeserializeJson()
+        Dim Candidates As String() = DlSourceConfig.GetVersionManifestCandidates(Entry)
+        If Candidates.Length = 0 Then Throw New Exception($"自定义下载源 {Entry.Name} 的地址无效")
+        Dim Json As JObject = Nothing
+        Dim LastError As Exception = Nothing
+        Dim UsedUrl As String = Nothing
+        For Each Candidate In Candidates
+            Try
+                Json = NetRequestByClientRetry(Candidate, RequireJson:=True).DeserializeJson()
+                If Json("versions") Is Nothing OrElse CType(Json("versions"), JArray).Count = 0 Then
+                    Throw New Exception("版本列表为空")
+                End If
+                UsedUrl = Candidate
+                Exit For
+            Catch ex As Exception
+                LastError = ex
+                Json = Nothing
+            End Try
+        Next
+        If Json Is Nothing Then
+            Throw New Exception($"自定义下载源 {Entry.Name} 的版本列表获取失败（{LastError?.Message}）", LastError)
+        End If
         Try
-            Dim Versions As JArray = Json("versions")
-            If Versions.Count < 200 Then Throw New Exception("获取到的版本列表长度不足（" & Json.ToString & "）")
             Loader.Output = New DlClientListResult With {.IsOfficial = False, .SourceName = Entry.Name, .Value = Json}
+            Logger.Info($"自定义下载源 {Entry.Name} 加载完成：{UsedUrl}，共 {CType(Json("versions"), JArray).Count} 个版本")
         Catch ex As Exception
             Throw New Exception($"自定义下载源 {Entry.Name} 的版本列表解析失败（{Json.ToString}）", ex)
         End Try
@@ -1257,12 +1276,20 @@ Public Module ModDownload
     End Property
 
     ''' <summary>
+    ''' 最近一次版本列表实际由哪个源解析，供界面展示。
+    ''' 为空表示尚未加载，或来源为 Mozilla 官方源。
+    ''' </summary>
+    Public DlClientListLastSourceName As String = ""
+
+    ''' <summary>
     ''' 按当前源顺序，将一个原始地址展开为所有候选地址。
+    ''' 自定义源只提供清单，不参与地址替换，因此这里跳过没有替换规则的源。
     ''' </summary>
     Private Function DlSourceExpand(Original As String) As IEnumerable(Of String)
         If Original Is Nothing Then Return {}
         Dim Result As New List(Of String)
         For Each Source In DlSources
+            If Source.Replacements Is Nothing OrElse Source.Replacements.Count = 0 Then Continue For
             If Source.CanHandle(Original) Then Result.Add(Source.Map(Original))
         Next
         If Result.Count = 0 Then Result.Add(Original)
@@ -1277,6 +1304,7 @@ Public Module ModDownload
         If Original Is Nothing Then Return {}
         Dim Result As New List(Of String)
         For Each Source In DlSources
+            If Source.Replacements Is Nothing OrElse Source.Replacements.Count = 0 Then Continue For
             Dim Effective As DlSourceRule = Source
             If Source.BuiltinKey = DlSourceRegistry.KeyBmclapi Then Effective = DlSourceRegistry.GetMavenCompatible(Source)
             If Effective.CanHandle(Original) Then Result.Add(Effective.Map(Original))
